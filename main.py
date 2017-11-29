@@ -94,16 +94,19 @@ def users_with_shared_movies(u, users):
     neighbours = {}
 
     flag = False
-    number_of_shared_movies = 0
+
 
     for v_id, v in users.items():
+
+        number_of_shared_movies = 0
+
         for rating_u in u:
             for rating_v in v:
                 if rating_u.movie_id == rating_v.movie_id:
                     neighbours[v_id] = v
                     number_of_shared_movies += 1
 
-                    if number_of_shared_movies == 200:
+                    if number_of_shared_movies == 1:
                         flag = True
                         break
             if flag:
@@ -138,7 +141,11 @@ def predict_movie_rating(u_id, users, movie_id):
     mean_neighbours_rating = 0
     total_ratings = 0
 
-    for neighbour in neighbours:
+    for neighbour_id, neighbour_all_data in neighbours.items():
+
+        neighbour = neighbour_all_data[0]
+        similarity_with_neighbour = neighbour_all_data[1]
+
         rating = contain_movie(neighbour, movie_id)
         if rating is not None:
             mean_neighbours_rating += rating.rating_value
@@ -157,4 +164,4 @@ def predict_movie_rating(u_id, users, movie_id):
 if __name__ == '__main__':
     users, movies = init(1)
 
-    print(str(predict_movie_rating('1', users, 6)))
+    print(str(predict_movie_rating('1', users, 10)))
