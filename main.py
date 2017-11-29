@@ -80,7 +80,6 @@ def init(index_doc):
                 users[line_array[0]] = []
 
             if line_array[1] not in movies.keys():
-                print(";"+str(line_array[1])+";")
                 movies[line_array[1]] = []
 
             rating = Rating(line_array[0], line_array[1], line_array[2])
@@ -88,7 +87,7 @@ def init(index_doc):
             users[line_array[0]].append(rating)  # Add the rating to the document
             movies[line_array[1]].append(rating)
 
-    return users,movies
+    return users, movies
 
 
 def users_with_shared_movies(u, users):
@@ -121,7 +120,7 @@ def k_nearest_neighbours(u_id, u, users, k, movie_id):
     for v_id, v in users_with_shared_movies(u, users).items():
         if v_id != u_id:
             if contain_movie(v, movie_id) is not None:
-                neighbours[v_id] = [v, (abs(pc_similarity(u_id, u, v_id, v)))]
+                neighbours[v_id] = [v, (pc_similarity(u_id, u, v_id, v))]
 
     reversed(sorted(neighbours.items(), key=lambda x: x[1][1]))
 
@@ -141,7 +140,7 @@ def predict_movie_rating(u_id, users, movie_id):
     neighbours = k_nearest_neighbours(u_id, u, users, 35, movie_id)
 
     mean_neighbours_rating = 0
-    total_ratings = 0
+    sum_weights = 0
 
     for neighbour_id, neighbour_all_data in neighbours.items():
 
@@ -150,13 +149,30 @@ def predict_movie_rating(u_id, users, movie_id):
 
         rating = contain_movie(neighbour, movie_id)
         if rating is not None:
-            mean_neighbours_rating += int(rating.rating_value)
-            total_ratings += 1
+            mean_neighbours_rating += int(rating.rating_value) * similarity_with_neighbour
+            sum_weights += abs(similarity_with_neighbour)
 
-    if total_ratings != 0:
-        mean_neighbours_rating = mean_neighbours_rating / total_ratings
+    if sum_weights != 0:
+        mean_neighbours_rating = mean_neighbours_rating / sum_weights
 
     return mean_neighbours_rating
+
+
+def test_recommendation(index):
+    users = {}
+
+    with open('./u' + str(index) + '.test', 'r', encoding='utf-8') as fin:
+        for line in fin:
+            line_array = line.split("\t")
+
+            if line_array[0] not in users.keys():  # Check if the user already exists
+                users[line_array[0]] = []
+
+            rating = Rating(line_array[0], line_array[1], line_array[2])
+
+            users[line_array[0]].append(rating)  # Add the rating to the document
+
+    return users
 
 
 ##########
@@ -164,14 +180,22 @@ def predict_movie_rating(u_id, users, movie_id):
 ##########
 
 if __name__ == '__main__':
-    users, movies = init(1)
 
-    sub_movies = {}
+    for i in range(1, 6):
+        users, movies = init(i)
+        users_solution = test_recommendation(i)
 
-    for id,movie in movies.items():
-        if int(id) < 16 and contain_movie(users['1'],id) is None :
-            sub_movies[id] = movie
+        sum_error = 0
+        nb_rating = 0
+
+        for u_id, u in users_solution.items():
+            for rating in u:
+                prediction = (predict_movie_rating(u_id, users, rating.movie_id))
+                sum_error += abs(prediction-int(rating.rating_value))
+                nb_rating += 1
+
+        error = sum_error/nb_rating
+
+        print("error for doc/test "+i+" : "+error)
 
 
-    for id in sub_movies.keys():
-        print(str(id)+" = "+str(predict_movie_rating('1', users, id)))
