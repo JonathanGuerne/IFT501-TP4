@@ -80,6 +80,7 @@ def init(index_doc):
                 users[line_array[0]] = []
 
             if line_array[1] not in movies.keys():
+                print(";"+str(line_array[1])+";")
                 movies[line_array[1]] = []
 
             rating = Rating(line_array[0], line_array[1], line_array[2])
@@ -87,14 +88,13 @@ def init(index_doc):
             users[line_array[0]].append(rating)  # Add the rating to the document
             movies[line_array[1]].append(rating)
 
-    return users, movies
+    return users,movies
 
 
 def users_with_shared_movies(u, users):
     neighbours = {}
 
     flag = False
-
 
     for v_id, v in users.items():
 
@@ -115,12 +115,13 @@ def users_with_shared_movies(u, users):
     return neighbours
 
 
-def k_nearest_neighbours(u_id, u, users, k):
+def k_nearest_neighbours(u_id, u, users, k, movie_id):
     neighbours = {}
 
     for v_id, v in users_with_shared_movies(u, users).items():
         if v_id != u_id:
-            neighbours[v_id] = [v, (abs(pc_similarity(u_id, u, v_id, v)))]
+            if contain_movie(v, movie_id) is not None:
+                neighbours[v_id] = [v, (abs(pc_similarity(u_id, u, v_id, v)))]
 
     reversed(sorted(neighbours.items(), key=lambda x: x[1][1]))
 
@@ -136,7 +137,8 @@ def contain_movie(u, movie_id):
 
 def predict_movie_rating(u_id, users, movie_id):
     u = users[u_id]
-    neighbours = k_nearest_neighbours(u_id, u, users, 35)
+
+    neighbours = k_nearest_neighbours(u_id, u, users, 35, movie_id)
 
     mean_neighbours_rating = 0
     total_ratings = 0
@@ -148,7 +150,7 @@ def predict_movie_rating(u_id, users, movie_id):
 
         rating = contain_movie(neighbour, movie_id)
         if rating is not None:
-            mean_neighbours_rating += rating.rating_value
+            mean_neighbours_rating += int(rating.rating_value)
             total_ratings += 1
 
     if total_ratings != 0:
@@ -164,4 +166,12 @@ def predict_movie_rating(u_id, users, movie_id):
 if __name__ == '__main__':
     users, movies = init(1)
 
-    print(str(predict_movie_rating('1', users, 10)))
+    sub_movies = {}
+
+    for id,movie in movies.items():
+        if int(id) < 16 and contain_movie(users['1'],id) is None :
+            sub_movies[id] = movie
+
+
+    for id in sub_movies.keys():
+        print(str(id)+" = "+str(predict_movie_rating('1', users, id)))
