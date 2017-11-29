@@ -119,10 +119,9 @@ def k_nearest_neighbours(u_id, u, users, k):
         if v_id != u_id:
             neighbours[v_id] = [v, (abs(pc_similarity(u_id, u, v_id, v)))]
 
-    neighbours.sort(key=lambda x: x[1])
-    neighbours.reverse()
+    reversed(sorted(neighbours.items(), key=lambda x: x[1][1]))
 
-    return neighbours[:k]
+    return {index: neighbours[index] for index in list(neighbours)[:k]}
 
 
 def contain_movie(u, movie_id):
@@ -149,6 +148,7 @@ def predict_movie_rating(u_id, users, movie_id):
         mean_neighbours_rating = mean_neighbours_rating / total_ratings
 
     return mean_neighbours_rating
+
 
 ##########
 #  Main  #
