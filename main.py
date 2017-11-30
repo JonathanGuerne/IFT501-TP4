@@ -129,13 +129,13 @@ def users_with_shared_movies(u, users):
     return neighbours
 
 
-def k_nearest_neighbours(u_id, u, users, k, movie_id, possible_neighbours):
+def k_nearest_neighbours(u_id, u, users, k, movie_id, possible_neighbours, user_similaity_list):
     neighbours = {}
-    
-    for v_id, v in possible_neighbours:
+
+    for v_id, v in possible_neighbours.items():
         if v_id != u_id:
             if contain_movie(v, movie_id) is not None:
-                neighbours[v_id] = [v, (pc_similarity(u_id, u, v_id, v))]
+                neighbours[v_id] = [v, user_similarity_list[v_id]]
 
     reversed(sorted(neighbours.items(), key=lambda x: x[1][1]))
 
@@ -149,13 +149,19 @@ def contain_movie(u, movie_id):
     return None
 
 
-def predict_movie_rating(u_id, users, movie_id, possible_neighbours):
+def list_similairty_user(possible_neighbours, u_id, u):
+    user_similarity_list = {}
+    for v_id, v in possible_neighbours.items():
+        user_similarity_list[v_id] = pc_similarity(u_id,u,v_id,v)
+    return user_similarity_list
+
+def predict_movie_rating(u_id, users, movie_id, possible_neighbours,user_similarity_list):
     u = users[u_id]
 
     mean_neighbours_rating = 0
     sum_weights = 0
 
-    neighbours = k_nearest_neighbours(u_id, u, users, 20, movie_id, possible_neighbours)
+    neighbours = k_nearest_neighbours(u_id, u, users, 20, movie_id, possible_neighbours,user_similarity_list)
 
     for neighbour_id, neighbour_all_data in neighbours.items():
 
@@ -173,14 +179,13 @@ def predict_movie_rating(u_id, users, movie_id, possible_neighbours):
     return mean_neighbours_rating
 
 
-
 ##########
 #  Main  #
 ##########
 
 if __name__ == '__main__':
 
-    for i in range(1, 2):
+    for i in range(2, 6):
         users, movies = init(i)
         users_solution = test_recommendation(i)
 
@@ -188,21 +193,29 @@ if __name__ == '__main__':
         nb_rating = 0
         percentage = 0
 
-        for u_id, u in users_solution.items():
-            possible_neighbours = users_with_shared_movies(u, users).items()
+        for nb in range(2):
 
-            for rating in u:
-                prediction = (predict_movie_rating(u_id, users, rating.movie_id, possible_neighbours))
-                sum_error += abs(prediction-int(rating.rating_value))
-                nb_rating += 1
-            
-            break 
-            percentage += 1/len(users_solution) * 100
-            print(percentage)
-            
+            for u_id, sol_u in users_solution.items():
 
-        error = sum_error/nb_rating
+                u = users[u_id]
 
-        print("error for doc/test " + str(i) + " : " + str(error))
+                possible_neighbours = users_with_shared_movies(u, users)
+                user_similarity_list = list_similairty_user(possible_neighbours, u_id, u)
 
+                for rating in sol_u:
+                    prediction = (predict_movie_rating(u_id, users, rating.movie_id, possible_neighbours,user_similarity_list))
+                    sum_error += abs(prediction - int(rating.rating_value))
+                    nb_rating += 1
 
+                percentage += 1 / len(users_solution) * 100
+                print(percentage)
+
+            error = sum_error / nb_rating
+
+            print("\n")
+
+            print("error for doc/test " + str(i) + " : " + str(error))
+
+            print("\n")
+
+            percentage = 0
