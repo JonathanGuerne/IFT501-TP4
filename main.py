@@ -16,6 +16,44 @@ class Rating:
 #  FUNC.  #
 ###########
 
+def init(index_doc):
+    users = {}
+    movies = {}
+    with open('./u' + str(index_doc) + '.base', 'r', encoding='utf-8') as fin:
+        for line in fin:
+            line_array = line.split("\t")
+
+            if line_array[0] not in users.keys():  # Check if the user already exists
+                users[line_array[0]] = []
+
+            if line_array[1] not in movies.keys():
+                movies[line_array[1]] = []
+
+            rating = Rating(line_array[0], line_array[1], line_array[2])
+
+            users[line_array[0]].append(rating)  # Add the rating to the document
+            movies[line_array[1]].append(rating)
+
+    return users, movies
+
+
+def test_recommendation(index):
+    users = {}
+
+    with open('./u' + str(index) + '.test', 'r', encoding='utf-8') as fin:
+        for line in fin:
+            line_array = line.split("\t")
+
+            if line_array[0] not in users.keys():  # Check if the user already exists
+                users[line_array[0]] = []
+
+            rating = Rating(line_array[0], line_array[1], line_array[2])
+
+            users[line_array[0]].append(rating)  # Add the rating to the document
+
+    return users
+
+
 def mean_rating(u):
     mean = 0
 
@@ -69,34 +107,11 @@ def pc_similarity(u_id, u, v_id, v):
     return numerator / denominator
 
 
-def init(index_doc):
-    users = {}
-    movies = {}
-    with open('./u' + str(index_doc) + '.base', 'r', encoding='utf-8') as fin:
-        for line in fin:
-            line_array = line.split("\t")
-
-            if line_array[0] not in users.keys():  # Check if the user already exists
-                users[line_array[0]] = []
-
-            if line_array[1] not in movies.keys():
-                movies[line_array[1]] = []
-
-            rating = Rating(line_array[0], line_array[1], line_array[2])
-
-            users[line_array[0]].append(rating)  # Add the rating to the document
-            movies[line_array[1]].append(rating)
-
-    return users, movies
-
-
 def users_with_shared_movies(u, users):
     neighbours = {}
-
     flag = False
 
     for v_id, v in users.items():
-
         number_of_shared_movies = 0
 
         for rating_u in u:
@@ -114,10 +129,10 @@ def users_with_shared_movies(u, users):
     return neighbours
 
 
-def k_nearest_neighbours(u_id, u, users, k, movie_id):
+def k_nearest_neighbours(u_id, u, users, k, movie_id, possible_neighbours):
     neighbours = {}
-
-    for v_id, v in users_with_shared_movies(u, users).items():
+    
+    for v_id, v in possible_neighbours:
         if v_id != u_id:
             if contain_movie(v, movie_id) is not None:
                 neighbours[v_id] = [v, (pc_similarity(u_id, u, v_id, v))]
@@ -134,13 +149,13 @@ def contain_movie(u, movie_id):
     return None
 
 
-def predict_movie_rating(u_id, users, movie_id):
+def predict_movie_rating(u_id, users, movie_id, possible_neighbours):
     u = users[u_id]
-
-    neighbours = k_nearest_neighbours(u_id, u, users, 35, movie_id)
 
     mean_neighbours_rating = 0
     sum_weights = 0
+
+    neighbours = k_nearest_neighbours(u_id, u, users, 20, movie_id, possible_neighbours)
 
     for neighbour_id, neighbour_all_data in neighbours.items():
 
@@ -158,22 +173,6 @@ def predict_movie_rating(u_id, users, movie_id):
     return mean_neighbours_rating
 
 
-def test_recommendation(index):
-    users = {}
-
-    with open('./u' + str(index) + '.test', 'r', encoding='utf-8') as fin:
-        for line in fin:
-            line_array = line.split("\t")
-
-            if line_array[0] not in users.keys():  # Check if the user already exists
-                users[line_array[0]] = []
-
-            rating = Rating(line_array[0], line_array[1], line_array[2])
-
-            users[line_array[0]].append(rating)  # Add the rating to the document
-
-    return users
-
 
 ##########
 #  Main  #
@@ -181,21 +180,29 @@ def test_recommendation(index):
 
 if __name__ == '__main__':
 
-    for i in range(1, 6):
+    for i in range(1, 2):
         users, movies = init(i)
         users_solution = test_recommendation(i)
 
         sum_error = 0
         nb_rating = 0
+        percentage = 0
 
         for u_id, u in users_solution.items():
+            possible_neighbours = users_with_shared_movies(u, users).items()
+
             for rating in u:
-                prediction = (predict_movie_rating(u_id, users, rating.movie_id))
+                prediction = (predict_movie_rating(u_id, users, rating.movie_id, possible_neighbours))
                 sum_error += abs(prediction-int(rating.rating_value))
                 nb_rating += 1
+            
+            break 
+            percentage += 1/len(users_solution) * 100
+            print(percentage)
+            
 
         error = sum_error/nb_rating
 
-        print("error for doc/test "+i+" : "+error)
+        print("error for doc/test " + str(i) + " : " + str(error))
 
 
