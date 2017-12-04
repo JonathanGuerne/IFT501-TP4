@@ -1,0 +1,10 @@
+error for doc/test 1 : 1.5411685860025972
+error for doc/test 1 : 1.5411685860025972
+error for doc/test 2 : 1.448372847888369
+error for doc/test 2 : 1.4483728478883677
+error for doc/test 3 : 1.38892220340197
+error for doc/test 3 : 1.3889222034019766
+error for doc/test 4 : 1.3925116978266867
+error for doc/test 4 : 1.3925116978266967
+error for doc/test 5 : 1.4423379501538884
+error for doc/test 5 : 1.4423379501538718
